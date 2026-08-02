@@ -1,4 +1,5 @@
 using Demo.Library.Api.Persistence.Options;
+using Azure.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace Demo.Library.Api.Persistence;
@@ -14,13 +15,29 @@ internal static class PersistenceExtensions
             .GetSection(CosmosDatabaseOptions.SectionName)
             .Get<CosmosDatabaseOptions>() ?? new CosmosDatabaseOptions();
 
-        if (string.IsNullOrWhiteSpace(cosmosOptions.ConnectionString))
-        {
-            throw new InvalidOperationException("CosmosDatabase:ConnectionString is required.");
-        }
-
         services.AddDbContext<LibraryDbContext>(options =>
-            options.UseCosmos(cosmosOptions.ConnectionString, cosmosOptions.DatabaseName));
+        {
+            if (!string.IsNullOrWhiteSpace(cosmosOptions.ConnectionString))
+            {
+                options.UseCosmos(cosmosOptions.ConnectionString, cosmosOptions.DatabaseName);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(cosmosOptions.AccountEndpoint))
+            {
+                throw new InvalidOperationException(
+                    "Either CosmosDatabase:ConnectionString or CosmosDatabase:AccountEndpoint must be configured.");
+            }
+
+            var credential = string.IsNullOrWhiteSpace(cosmosOptions.ManagedIdentityClientId)
+                ? new DefaultAzureCredential()
+                : new DefaultAzureCredential(new DefaultAzureCredentialOptions
+                {
+                    ManagedIdentityClientId = cosmosOptions.ManagedIdentityClientId
+                });
+
+            options.UseCosmos(cosmosOptions.AccountEndpoint, credential, cosmosOptions.DatabaseName);
+        });
 
         return services;
     }
