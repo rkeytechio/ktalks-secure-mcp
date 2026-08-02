@@ -7,7 +7,7 @@ internal static class ReturnBookEndpoint
 {
     public static RouteHandlerBuilder MapReturnBook(this RouteGroupBuilder library)
     {
-        return library.MapPost("/books/{bookId:int}/return", async (
+        return library.MapPost("/books/{bookId}/return", async (
             [AsParameters] BookRouteRequest request,
                 HttpContext httpContext,
                 ILibraryService libraryService,

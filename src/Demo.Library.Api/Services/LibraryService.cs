@@ -107,11 +107,11 @@ internal sealed class LibraryService(LibraryDbContext db) : ILibraryService
     }
 
     public async Task<LibraryActionResult> BorrowBookAsync(
-        int bookId,
+        string bookId,
         string userId,
         CancellationToken cancellationToken = default)
     {
-        var book = await db.Books.FindAsync([bookId], cancellationToken);
+        var book = await db.Books.FirstOrDefaultAsync(b => b.Id == bookId, cancellationToken);
         if (book is null)
         {
             return LibraryActionResult.NotFound("Book not found.");
@@ -122,10 +122,13 @@ internal sealed class LibraryService(LibraryDbContext db) : ILibraryService
             return LibraryActionResult.Conflict("No copies are currently available.");
         }
 
-        var existingLoan = await db.Loans
-            .AnyAsync(l => l.BookId == bookId && l.UserId == userId && l.ReturnedAtUtc == null, cancellationToken);
+        var existingLoanIds = await db.Loans
+            .Where(l => l.BookId == bookId && l.UserId == userId && l.ReturnedAtUtc == null)
+            .Select(l => l.Id)
+            .Take(1)
+            .ToListAsync(cancellationToken);
 
-        if (existingLoan)
+        if (existingLoanIds.Count > 0)
         {
             return LibraryActionResult.Conflict("You already have this book borrowed.");
         }
@@ -148,7 +151,7 @@ internal sealed class LibraryService(LibraryDbContext db) : ILibraryService
     }
 
     public async Task<LibraryActionResult> ReturnBookAsync(
-        int bookId,
+        string bookId,
         string userId,
         CancellationToken cancellationToken = default)
     {

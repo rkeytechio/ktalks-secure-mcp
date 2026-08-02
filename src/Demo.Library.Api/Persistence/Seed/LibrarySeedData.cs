@@ -1,21 +1,28 @@
 using Demo.Library.Api.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace Demo.Library.Api.Persistence.Seed;
 
 internal static class LibrarySeedData
 {
-    public static void Seed(WebApplication app)
+    public static async Task SeedAsync(WebApplication app)
     {
         using var scope = app.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<LibraryDbContext>();
-        db.Database.EnsureCreated();
+        await db.Database.EnsureCreatedAsync();
 
-        if (db.Books.Any())
+        var existingBookIds = await db.Books
+            .Select(book => book.Id)
+            .Take(1)
+            .ToListAsync();
+
+        if (existingBookIds.Count > 0)
         {
             return;
         }
 
-        db.Books.AddRange(
+        var books = new[]
+        {
             new Book { Isbn = "978-1617295416", Title = "C# in Depth", Author = "Jon Skeet", TotalCopies = 4, AvailableCopies = 4 },
             new Book { Isbn = "978-1617295829", Title = "ASP.NET Core in Action", Author = "Andrew Lock", TotalCopies = 3, AvailableCopies = 3 },
             new Book { Isbn = "978-1617296574", Title = "gRPC in .NET", Author = "Maarten Balliauw", TotalCopies = 2, AvailableCopies = 2 },
@@ -35,8 +42,11 @@ internal static class LibrarySeedData
             new Book { Isbn = "978-1492078005", Title = "Kubernetes: Up and Running", Author = "Brendan Burns", TotalCopies = 2, AvailableCopies = 2 },
             new Book { Isbn = "978-1491950357", Title = "Site Reliability Engineering", Author = "Betsy Beyer", TotalCopies = 2, AvailableCopies = 2 },
             new Book { Isbn = "978-1801079413", Title = "Mastering Azure Architecture", Author = "Ritesh Modi", TotalCopies = 3, AvailableCopies = 3 },
-            new Book { Isbn = "978-1492032649", Title = "Programming C# 8.0", Author = "Ian Griffiths", TotalCopies = 3, AvailableCopies = 3 });
+            new Book { Isbn = "978-1492032649", Title = "Programming C# 8.0", Author = "Ian Griffiths", TotalCopies = 3, AvailableCopies = 3 }
+        };
 
-        db.SaveChanges();
+        db.Books.AddRange(books);
+
+        await db.SaveChangesAsync();
     }
 }

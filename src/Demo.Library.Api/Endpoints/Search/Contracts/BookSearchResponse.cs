@@ -1,7 +1,7 @@
 namespace Demo.Library.Api.Endpoints.Search.Contracts;
 
 internal sealed record BookSearchResponse(
-    int Id,
+    string Id,
     string Isbn,
     string Title,
     string Author,

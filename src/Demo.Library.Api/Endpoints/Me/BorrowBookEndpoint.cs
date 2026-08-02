@@ -7,7 +7,7 @@ internal static class BorrowBookEndpoint
 {
     public static RouteHandlerBuilder MapBorrowBook(this RouteGroupBuilder library)
     {
-        return library.MapPost("/books/{bookId:int}/borrow", async (
+        return library.MapPost("/books/{bookId}/borrow", async (
             [AsParameters] BookRouteRequest request,
                 HttpContext httpContext,
                 ILibraryService libraryService,

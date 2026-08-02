@@ -10,12 +10,12 @@ internal interface ILibraryService
         CancellationToken cancellationToken = default);
 
     Task<LibraryActionResult> BorrowBookAsync(
-        int bookId,
+        string bookId,
         string userId,
         CancellationToken cancellationToken = default);
 
     Task<LibraryActionResult> ReturnBookAsync(
-        int bookId,
+        string bookId,
         string userId,
         CancellationToken cancellationToken = default);
 

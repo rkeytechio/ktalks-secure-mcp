@@ -22,14 +22,16 @@ internal sealed class LibraryDbContext(
         {
             entity.ToContainer(cosmosOptions.BooksContainerName);
             entity.HasKey(x => x.Id);
-            entity.Property(x => x.Id).ValueGeneratedOnAdd();
+            entity.HasPartitionKey(x => x.Id);
+            entity.Property(x => x.Id).ValueGeneratedNever();
         });
 
         modelBuilder.Entity<Loan>(entity =>
         {
             entity.ToContainer(cosmosOptions.LoansContainerName);
             entity.HasKey(x => x.Id);
-            entity.Property(x => x.Id).ValueGeneratedOnAdd();
+            entity.HasPartitionKey(x => x.UserId);
+            entity.Property(x => x.Id).ValueGeneratedNever();
             entity.Ignore(x => x.Book);
         });
 
