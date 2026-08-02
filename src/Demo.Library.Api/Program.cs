@@ -9,6 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 // API and diagnostics
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddApplicationInsightsTelemetry();
 
 // Domain services
 builder.Services.AddScoped<ILibraryService, LibraryService>();
