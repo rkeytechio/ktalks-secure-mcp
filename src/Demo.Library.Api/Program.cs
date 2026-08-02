@@ -22,7 +22,7 @@ builder.Services.AddPersistence(builder.Configuration);
 
 var app = builder.Build();
 
-LibrarySeedData.Seed(app);
+await LibrarySeedData.SeedAsync(app);
 
 if (app.Environment.IsDevelopment())
 {
