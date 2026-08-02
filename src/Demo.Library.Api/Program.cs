@@ -16,6 +16,9 @@ builder.Services.AddDbContext<LibraryDbContext>(options =>
     options.UseInMemoryDatabase("LibraryDemoDb"));
 builder.Services.AddScoped<ILibraryService, LibraryService>();
 
+// Activity logging
+builder.Services.AddActivityLogging(builder.Configuration);
+
 // Persistence
 builder.Services.AddPersistence(builder.Configuration);
 
@@ -30,6 +33,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseActivityLogging();
 
 app.MapLibraryEndpoints();
 
