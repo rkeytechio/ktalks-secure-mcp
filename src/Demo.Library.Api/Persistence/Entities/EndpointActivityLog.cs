@@ -1,10 +1,8 @@
 using Newtonsoft.Json;
-using Demo.Library.Api.Persistence.Abstractions;
 
 namespace Demo.Library.Api.Persistence.Entities;
 
 internal sealed class EndpointActivityLog
-    : ICosmosEntity
 {
     public const string WebActivityType = "Web";
 

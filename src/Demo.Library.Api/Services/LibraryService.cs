@@ -1,7 +1,7 @@
-using Demo.Library.Api.Data;
 using Demo.Library.Api.Endpoints.Me.Contracts;
 using Demo.Library.Api.Endpoints.Search.Contracts;
 using Demo.Library.Api.Models;
+using Demo.Library.Api.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace Demo.Library.Api.Services;
@@ -153,42 +153,66 @@ internal sealed class LibraryService(LibraryDbContext db) : ILibraryService
         CancellationToken cancellationToken = default)
     {
         var loan = await db.Loans
-            .Include(l => l.Book)
             .FirstOrDefaultAsync(
                 l => l.BookId == bookId && l.UserId == userId && l.ReturnedAtUtc == null,
                 cancellationToken);
 
-        if (loan?.Book is null)
+        if (loan is null)
         {
             return LibraryActionResult.NotFound("You do not currently have this book borrowed.");
         }
 
+        var book = await db.Books.FirstOrDefaultAsync(b => b.Id == loan.BookId, cancellationToken);
+        if (book is null)
+        {
+            return LibraryActionResult.NotFound("Book not found.");
+        }
+
         loan.ReturnedAtUtc = DateTime.UtcNow;
-        loan.Book.AvailableCopies += 1;
+        book.AvailableCopies += 1;
 
         await db.SaveChangesAsync(cancellationToken);
 
         return LibraryActionResult.Success(new BookTransactionResponse(
             "Book returned successfully.",
-            loan.Book.Id,
-            loan.Book.Title,
-            loan.Book.AvailableCopies));
+            book.Id,
+            book.Title,
+            book.AvailableCopies));
     }
 
     public async Task<IReadOnlyList<BorrowedBookResponse>> GetBorrowedBooksAsync(
         string userId,
         CancellationToken cancellationToken = default)
     {
-        return await db.Loans
+        var activeLoans = await db.Loans
             .AsNoTracking()
             .Where(l => l.UserId == userId && l.ReturnedAtUtc == null)
             .OrderByDescending(l => l.BorrowedAtUtc)
-            .Select(l => new BorrowedBookResponse(
-                l.BookId,
-                l.Book!.Isbn,
-                l.Book.Title,
-                l.Book.Author,
-                l.BorrowedAtUtc))
             .ToListAsync(cancellationToken);
+
+        if (activeLoans.Count == 0)
+        {
+            return [];
+        }
+
+        var borrowedBookIds = activeLoans.Select(l => l.BookId).Distinct().ToList();
+        var booksById = await db.Books
+            .AsNoTracking()
+            .Where(b => borrowedBookIds.Contains(b.Id))
+            .ToDictionaryAsync(b => b.Id, cancellationToken);
+
+        return activeLoans
+            .Where(loan => booksById.ContainsKey(loan.BookId))
+            .Select(loan =>
+            {
+                var book = booksById[loan.BookId];
+                return new BorrowedBookResponse(
+                    loan.BookId,
+                    book.Isbn,
+                    book.Title,
+                    book.Author,
+                    loan.BorrowedAtUtc);
+            })
+            .ToList();
     }
 }
