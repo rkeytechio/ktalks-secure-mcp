@@ -3,18 +3,18 @@ using Demo.Library.Api.Endpoints;
 using Demo.Library.Api.Logging;
 using Demo.Library.Api.Logging.Options;
 using Demo.Library.Api.Logging.Utilities;
-using Demo.Library.Api.Persistence.Abstractions;
 using Demo.Library.Api.Persistence.Entities;
+using Demo.Library.Api.Persistence;
 using Microsoft.Extensions.Options;
 
 namespace Demo.Library.Api.Logging.Middleware;
 
 internal sealed class ResponseActivityLoggingMiddleware(
-    IActivityLogRepository repository,
+    LibraryDbContext dbContext,
     IOptions<ActivityLoggingOptions> options,
     ILogger<ResponseActivityLoggingMiddleware> logger) : IMiddleware
 {
-    private readonly IActivityLogRepository repository = repository;
+    private readonly LibraryDbContext dbContext = dbContext;
     private readonly ActivityLoggingOptions options = options.Value;
     private readonly ILogger<ResponseActivityLoggingMiddleware> logger = logger;
 
@@ -71,7 +71,19 @@ internal sealed class ResponseActivityLoggingMiddleware(
             stopwatch.Stop();
 
             var activityLog = BuildActivityLog(context, stopwatch.ElapsedMilliseconds, responseBody, responseBodyWasTruncated, downstreamException);
-            await repository.SaveActivityAsync(activityLog, context.RequestAborted);
+            try
+            {
+                await dbContext.EndpointActivityLogs.AddAsync(activityLog, context.RequestAborted);
+                await dbContext.SaveChangesAsync(context.RequestAborted);
+            }
+            catch (OperationCanceledException)
+            {
+                logger.LogWarning("Request canceled while saving endpoint activity log.");
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to save endpoint activity log using EF Core.");
+            }
         }
     }
 
