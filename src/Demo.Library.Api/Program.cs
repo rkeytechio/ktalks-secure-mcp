@@ -5,14 +5,15 @@ using Demo.Library.Api.OpenApi;
 using Demo.Library.Api.Persistence;
 using Demo.Library.Api.Persistence.Seed;
 using Demo.Library.Api.Services;
+using Demo.Library.Api.Telemetry;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // API and diagnostics
 builder.Services.AddLibraryOpenApi();
 
-// Application Insights telemetry
-builder.Services.AddApplicationInsightsTelemetry();
+// OpenTelemetry
+builder.Services.AddLibraryOpenTelemetry(builder.Configuration);
 
 // Authentication and authorization
 builder.Services.AddLibraryAuthentication(builder.Configuration);
