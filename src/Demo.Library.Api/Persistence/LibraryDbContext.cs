@@ -40,7 +40,6 @@ internal sealed class LibraryDbContext(
             entity.ToContainer(cosmosOptions.EndpointActivityContainerName);
             entity.HasKey(x => x.Id);
             entity.HasPartitionKey(x => x.ActivityType);
-            entity.Property(x => x.Id).ToJsonProperty("id");
         });
 
         modelBuilder.Entity<AccountClosureRequestEntity>(entity =>

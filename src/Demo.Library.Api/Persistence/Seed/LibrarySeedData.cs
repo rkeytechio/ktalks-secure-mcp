@@ -1,4 +1,6 @@
 using Demo.Library.Api.Persistence.Entities;
+using Demo.Library.Api.Persistence.Options;
+using Microsoft.Extensions.Options;
 using Microsoft.EntityFrameworkCore;
 
 namespace Demo.Library.Api.Persistence.Seed;
@@ -9,12 +11,45 @@ internal static class LibrarySeedData
     {
         using var scope = app.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<LibraryDbContext>();
-        await db.Database.EnsureCreatedAsync();
+        var cosmosOptions = scope.ServiceProvider
+            .GetRequiredService<IOptions<CosmosDatabaseOptions>>()
+            .Value;
 
-        var existingBookIds = await db.Books
-            .Select(book => book.Id)
-            .Take(1)
-            .ToListAsync();
+        if (cosmosOptions.EnsureCreated)
+        {
+            try
+            {
+                await db.Database.EnsureCreatedAsync();
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException(
+                    $"Cosmos DB EnsureCreated failed for database '{cosmosOptions.DatabaseName}'. " +
+                    "This operation requires metadata/schema creation permissions. " +
+                    "In Azure App Service, prefer infra-managed creation and set CosmosDatabase:EnsureCreated to false.",
+                    ex);
+            }
+        }
+
+        List<string> existingBookIds;
+
+        try
+        {
+            existingBookIds = await db.Books
+                .Select(book => book.Id)
+                .Take(1)
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException(
+                $"Cosmos DB seeding failed for database '{cosmosOptions.DatabaseName}'. Expected containers: " +
+                $"'{cosmosOptions.BooksContainerName}', '{cosmosOptions.LoansContainerName}', " +
+                $"'{cosmosOptions.EndpointActivityContainerName}', '{cosmosOptions.AccountClosureRequestsContainerName}'. " +
+                $"EnsureCreated is {(cosmosOptions.EnsureCreated ? "enabled" : "disabled")}. " +
+                "If EnsureCreated is disabled, these resources must already exist and the app's managed identity must have Cosmos DB data-plane access.",
+                ex);
+        }
 
         if (existingBookIds.Count > 0)
         {

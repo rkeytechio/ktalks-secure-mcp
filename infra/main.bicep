@@ -67,6 +67,7 @@ var aiFoundryDeploymentName = take(replace('${aiFoundryModelName}-${normalizedEn
 var appServicePlanSkuName = 'B1'
 var appServicePlanSkuCapacity = 1
 var cosmosPublicNetworkAccess = 'Enabled'
+var cosmosBuiltInDataContributorRoleDefinitionId = '00000000-0000-0000-0000-000000000002'
 var keyVaultPublicNetworkAccess = 'Enabled'
 var logAnalyticsSkuName = 'PerGB2018'
 var observabilityRetentionDays = 30
@@ -144,12 +145,38 @@ module cosmosAccount 'br/public:avm/res/document-db/database-account:0.20.0' = {
     sqlDatabases: [
       {
         name: cosmosSqlDatabaseName
+        containers: [
+          {
+            name: 'Books'
+            paths: [
+              '/id'
+            ]
+          }
+          {
+            name: 'Loans'
+            paths: [
+              '/userid'
+            ]
+          }
+          {
+            name: 'EndpointActivity'
+            paths: [
+              '/activitytype'
+            ]
+          }
+          {
+            name: 'AccountClosureRequests'
+            paths: [
+              '/userid'
+            ]
+          }
+        ]
       }
     ]
     sqlRoleAssignments: [
       {
         principalId: userAssignedIdentity.properties.principalId
-        roleDefinitionId: 'Cosmos DB Built-in Data Contributor'
+        roleDefinitionId: cosmosBuiltInDataContributorRoleDefinitionId
       }
     ]
     networkRestrictions: {
@@ -280,7 +307,7 @@ module webApp 'br/public:avm/res/web/site:0.24.0' = {
           CosmosDatabase__Books: 'Books'
           CosmosDatabase__Loans: 'Loans'
           CosmosDatabase__AccountClosureRequests: 'AccountClosureRequests'
-          CosmosDatabase__EnsureCreated: 'true'
+          CosmosDatabase__EnsureCreated: 'false'
           ActivityLogging__CaptureRequestBody: 'true'
           ActivityLogging__CaptureResponseBody: 'true'
           ActivityLogging__MaxBodyLength: '16384'
