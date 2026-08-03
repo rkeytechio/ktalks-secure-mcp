@@ -20,6 +20,7 @@ internal static class LibraryEndpoints
         me.MapReturnBook();
         me.MapGetMyBorrowedBooks();
         me.MapRequestAccountClosure();
+        me.MapUpgradeMembershipTier();
 
         return api;
     }
