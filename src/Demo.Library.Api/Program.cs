@@ -35,11 +35,9 @@ var app = builder.Build();
 
 await LibrarySeedData.SeedAsync(app);
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// OpenAPI and Swagger
+app.UseSwagger();
+app.UseSwaggerUI();
 
 // Middleware pipeline: HTTPS -> Auth -> Activity logging -> Endpoints.
 app.UseHttpsRedirection();
