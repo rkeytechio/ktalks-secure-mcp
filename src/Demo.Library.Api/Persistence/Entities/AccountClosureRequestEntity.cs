@@ -6,7 +6,7 @@ internal enum AccountClosureRequestStatus
     Cancelled
 }
 
-internal sealed class AccountClosureRequestEntity
+internal sealed record class AccountClosureRequestEntity
 {
     public string Id { get; set; } = string.Empty;
     public string UserId { get; set; } = string.Empty;

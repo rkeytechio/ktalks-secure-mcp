@@ -140,7 +140,7 @@ internal sealed class LibraryService(LibraryDbContext db) : ILibraryService
         }
 
         book.AvailableCopies -= 1;
-        db.Loans.Add(new Loan
+        db.Loans.Add(new LoanEntity
         {
             BookId = bookId,
             UserId = userId,
@@ -224,13 +224,8 @@ internal sealed class LibraryService(LibraryDbContext db) : ILibraryService
             .Where(loan => booksById.ContainsKey(loan.BookId))
             .Select(loan =>
             {
-                var book = booksById[loan.BookId];
-                return new BorrowedBookResponse(
-                    loan.BookId,
-                    book.Isbn,
-                    book.Title,
-                    book.Author,
-                    loan.BorrowedAtUtc);
+            var loanModel = loan.ToModel(booksById[loan.BookId]);
+            return loanModel.ToBorrowedBookResponse();
             })
             .ToList();
 

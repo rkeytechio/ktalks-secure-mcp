@@ -2,7 +2,7 @@ using Newtonsoft.Json;
 
 namespace Demo.Library.Api.Persistence.Entities;
 
-internal sealed class EndpointActivityLog
+internal sealed record class EndpointActivityLogEntity
 {
     public const string WebActivityType = "Web";
 

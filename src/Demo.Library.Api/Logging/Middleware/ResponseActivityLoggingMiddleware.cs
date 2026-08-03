@@ -87,7 +87,7 @@ internal sealed class ResponseActivityLoggingMiddleware(
         }
     }
 
-    private EndpointActivityLog BuildActivityLog(
+    private EndpointActivityLogEntity BuildActivityLog(
         HttpContext context,
         long elapsedMilliseconds,
         string? responseBody,
@@ -105,9 +105,9 @@ internal sealed class ResponseActivityLoggingMiddleware(
             userId = userHeader.ToString();
         }
 
-        return new EndpointActivityLog
+        return new EndpointActivityLogEntity
         {
-            ActivityType = EndpointActivityLog.WebActivityType,
+            ActivityType = EndpointActivityLogEntity.WebActivityType,
             CorrelationId = context.GetOrCreateCorrelationId(),
             TimestampUtc = DateTime.UtcNow,
             Method = context.Request.Method,

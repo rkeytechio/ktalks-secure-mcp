@@ -1,4 +1,3 @@
-using Demo.Library.Api.Models;
 using Demo.Library.Api.Persistence.Entities;
 using Demo.Library.Api.Persistence.Options;
 using Microsoft.EntityFrameworkCore;
@@ -12,14 +11,14 @@ internal sealed class LibraryDbContext(
 {
     private readonly CosmosDatabaseOptions cosmosOptions = cosmosOptions.Value;
 
-    public DbSet<Book> Books => Set<Book>();
-    public DbSet<Loan> Loans => Set<Loan>();
-    public DbSet<EndpointActivityLog> EndpointActivityLogs => Set<EndpointActivityLog>();
+    public DbSet<BookEntity> Books => Set<BookEntity>();
+    public DbSet<LoanEntity> Loans => Set<LoanEntity>();
+    public DbSet<EndpointActivityLogEntity> EndpointActivityLogs => Set<EndpointActivityLogEntity>();
     public DbSet<AccountClosureRequestEntity> AccountClosureRequests => Set<AccountClosureRequestEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<Book>(entity =>
+        modelBuilder.Entity<BookEntity>(entity =>
         {
             entity.ToContainer(cosmosOptions.BooksContainerName);
             entity.HasKey(x => x.Id);
@@ -27,7 +26,7 @@ internal sealed class LibraryDbContext(
             entity.Property(x => x.Id).ValueGeneratedNever();
         });
 
-        modelBuilder.Entity<Loan>(entity =>
+        modelBuilder.Entity<LoanEntity>(entity =>
         {
             entity.ToContainer(cosmosOptions.LoansContainerName);
             entity.HasKey(x => x.Id);
@@ -36,7 +35,7 @@ internal sealed class LibraryDbContext(
             entity.Ignore(x => x.Book);
         });
 
-        modelBuilder.Entity<EndpointActivityLog>(entity =>
+        modelBuilder.Entity<EndpointActivityLogEntity>(entity =>
         {
             entity.ToContainer(cosmosOptions.EndpointActivityContainerName);
             entity.HasKey(x => x.Id);
