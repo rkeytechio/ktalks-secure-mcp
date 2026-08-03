@@ -56,7 +56,7 @@ var keyVaultNameRaw = take('${baseDashed}-kv', 24)
 var keyVaultName = endsWith(keyVaultNameRaw, '-') ? '${substring(keyVaultNameRaw, 0, length(keyVaultNameRaw) - 1)}0' : keyVaultNameRaw
 
 var cosmosAccountName = take('${baseCompact}cos', 44)
-var cosmosSqlDatabaseName = take('${normalizedEnvironment}-db', 255)
+var cosmosSqlDatabaseName = 'DemoLibrary'
 var logAnalyticsWorkspaceName = take('${baseDashed}-law', 63)
 var appInsightsName = take('${baseDashed}-appi', 260)
 var aiFoundryAccountName = take('${baseCompact}ai', 64)
@@ -64,7 +64,7 @@ var aiFoundryProjectName = take('${normalizedProject}-${normalizedEnvironment}-p
 var aiFoundryDeploymentName = take(replace('${aiFoundryModelName}-${normalizedEnvironment}', '.', '-'), 64)
 
 // Variables
-var appServicePlanSkuName = 'F1'
+var appServicePlanSkuName = 'B1'
 var appServicePlanSkuCapacity = 1
 var cosmosPublicNetworkAccess = 'Enabled'
 var keyVaultPublicNetworkAccess = 'Enabled'
@@ -275,7 +275,7 @@ module webApp 'br/public:avm/res/web/site:0.24.0' = {
           KEYVAULT__URI: keyVault.outputs.uri
           CosmosDatabase__AccountEndpoint: cosmosAccount.outputs.endpoint
           CosmosDatabase__ManagedIdentityClientId: userAssignedIdentity.properties.clientId
-          CosmosDatabase__DatabaseName: 'DemoLibrary'
+          CosmosDatabase__DatabaseName: cosmosSqlDatabaseName
           CosmosDatabase__EndpointActivity: 'EndpointActivity'
           CosmosDatabase__Books: 'Books'
           CosmosDatabase__Loans: 'Loans'
