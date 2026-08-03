@@ -10,7 +10,7 @@ internal static class OpenTelemetryExtensions
     {
         var applicationInsightsConnectionString = configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
 
-        services.AddOpenTelemetry()
+        var openTelemetryBuilder = services.AddOpenTelemetry()
             .WithTracing(builder => builder
                 .AddSource("*")
                 .AddAspNetCoreInstrumentation()
@@ -19,14 +19,15 @@ internal static class OpenTelemetryExtensions
                 .AddMeter("*")
                 .AddAspNetCoreInstrumentation()
                 .AddHttpClientInstrumentation())
-            .WithLogging()
-            .UseAzureMonitor(options =>
+            .WithLogging();
+
+        if (!string.IsNullOrWhiteSpace(applicationInsightsConnectionString))
+        {
+            openTelemetryBuilder.UseAzureMonitor(options =>
             {
-                if (!string.IsNullOrWhiteSpace(applicationInsightsConnectionString))
-                {
-                    options.ConnectionString = applicationInsightsConnectionString;
-                }
+                options.ConnectionString = applicationInsightsConnectionString;
             });
+        }
 
         return services;
     }
