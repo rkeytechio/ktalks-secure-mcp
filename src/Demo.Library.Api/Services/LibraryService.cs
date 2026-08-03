@@ -19,14 +19,14 @@ internal sealed class LibraryService(LibraryDbContext db) : ILibraryService
         {
             var term = request.Query.Trim().ToLowerInvariant();
             query = query.Where(b =>
-                MatchesLikePattern(b.Title.ToLower(), term) ||
-                MatchesLikePattern(b.Author.ToLower(), term));
+                b.Title.ToLower().Contains(term) ||
+                b.Author.ToLower().Contains(term));
         }
 
         if (!string.IsNullOrWhiteSpace(request.Author))
         {
             var authorTerm = request.Author.Trim().ToLowerInvariant();
-            query = query.Where(b => MatchesLikePattern(b.Author.ToLower(), authorTerm));
+            query = query.Where(b => b.Author.ToLower().Contains(authorTerm));
         }
 
         if (!string.IsNullOrWhiteSpace(request.Isbn))
@@ -50,61 +50,6 @@ internal sealed class LibraryService(LibraryDbContext db) : ILibraryService
                 b.AvailableCopies,
                 b.TotalCopies))
             .ToListAsync(cancellationToken);
-    }
-
-    private static bool MatchesLikePattern(string source, string pattern)
-    {
-        if (string.IsNullOrWhiteSpace(pattern) || pattern == "%" || pattern == "%%")
-        {
-            return true;
-        }
-
-        if (!pattern.Contains('%'))
-        {
-            return source.Contains(pattern, StringComparison.OrdinalIgnoreCase);
-        }
-
-        var startsWithWildcard = pattern.StartsWith('%');
-        var endsWithWildcard = pattern.EndsWith('%');
-
-        var tokens = pattern
-            .Split('%', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-
-        if (tokens.Length == 0)
-        {
-            return true;
-        }
-
-        var currentIndex = 0;
-
-        if (!startsWithWildcard)
-        {
-            if (!source.StartsWith(tokens[0], StringComparison.OrdinalIgnoreCase))
-            {
-                return false;
-            }
-
-            currentIndex = tokens[0].Length;
-        }
-
-        for (var i = startsWithWildcard ? 0 : 1; i < tokens.Length; i++)
-        {
-            var token = tokens[i];
-            var foundIndex = source.IndexOf(token, currentIndex, StringComparison.OrdinalIgnoreCase);
-            if (foundIndex < 0)
-            {
-                return false;
-            }
-
-            currentIndex = foundIndex + token.Length;
-        }
-
-        if (!endsWithWildcard)
-        {
-            return source.EndsWith(tokens[^1], StringComparison.OrdinalIgnoreCase);
-        }
-
-        return true;
     }
 
     public async Task<LibraryActionResult> BorrowBookAsync(
