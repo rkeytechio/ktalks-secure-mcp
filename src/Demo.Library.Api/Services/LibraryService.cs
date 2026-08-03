@@ -2,6 +2,7 @@ using Demo.Library.Api.Endpoints.Me.Contracts;
 using Demo.Library.Api.Endpoints.Search.Contracts;
 using Demo.Library.Api.Models;
 using Demo.Library.Api.Persistence;
+using Demo.Library.Api.Persistence.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace Demo.Library.Api.Services;
@@ -111,6 +112,11 @@ internal sealed class LibraryService(LibraryDbContext db) : ILibraryService
         string userId,
         CancellationToken cancellationToken = default)
     {
+        if (await HasAccountClosureRequestAsync(userId, cancellationToken))
+        {
+            return LibraryActionResult.Conflict("Your account closure request has been received.");
+        }
+
         var book = await db.Books.FirstOrDefaultAsync(b => b.Id == bookId, cancellationToken);
         if (book is null)
         {
@@ -155,6 +161,11 @@ internal sealed class LibraryService(LibraryDbContext db) : ILibraryService
         string userId,
         CancellationToken cancellationToken = default)
     {
+        if (await HasAccountClosureRequestAsync(userId, cancellationToken))
+        {
+            return LibraryActionResult.Conflict("Your account closure request has been received.");
+        }
+
         var loan = await db.Loans
             .FirstOrDefaultAsync(
                 l => l.BookId == bookId && l.UserId == userId && l.ReturnedAtUtc == null,
@@ -183,10 +194,15 @@ internal sealed class LibraryService(LibraryDbContext db) : ILibraryService
             book.AvailableCopies));
     }
 
-    public async Task<IReadOnlyList<BorrowedBookResponse>> GetBorrowedBooksAsync(
+    public async Task<LibraryActionResult> GetBorrowedBooksAsync(
         string userId,
         CancellationToken cancellationToken = default)
     {
+        if (await HasAccountClosureRequestAsync(userId, cancellationToken))
+        {
+            return LibraryActionResult.Conflict("Your account closure request has been received.");
+        }
+
         var activeLoans = await db.Loans
             .AsNoTracking()
             .Where(l => l.UserId == userId && l.ReturnedAtUtc == null)
@@ -195,7 +211,7 @@ internal sealed class LibraryService(LibraryDbContext db) : ILibraryService
 
         if (activeLoans.Count == 0)
         {
-            return [];
+            return LibraryActionResult.Success(Array.Empty<BorrowedBookResponse>());
         }
 
         var borrowedBookIds = activeLoans.Select(l => l.BookId).Distinct().ToList();
@@ -204,7 +220,7 @@ internal sealed class LibraryService(LibraryDbContext db) : ILibraryService
             .Where(b => borrowedBookIds.Contains(b.Id))
             .ToDictionaryAsync(b => b.Id, cancellationToken);
 
-        return activeLoans
+        var borrowedBooks = activeLoans
             .Where(loan => booksById.ContainsKey(loan.BookId))
             .Select(loan =>
             {
@@ -217,5 +233,61 @@ internal sealed class LibraryService(LibraryDbContext db) : ILibraryService
                     loan.BorrowedAtUtc);
             })
             .ToList();
+
+        return LibraryActionResult.Success(borrowedBooks);
+    }
+
+    public async Task<LibraryActionResult> RequestAccountClosureAsync(
+        string userId,
+        string reason,
+        CancellationToken cancellationToken = default)
+    {
+        var hasActiveLoans = await db.Loans
+            .AsNoTracking()
+            .Where(loan => loan.UserId == userId && loan.ReturnedAtUtc == null)
+            .Select(loan => loan.Id)
+            .Take(1)
+            .AnyAsync(cancellationToken);
+
+        if (hasActiveLoans)
+        {
+            return LibraryActionResult.Conflict(
+                "All borrowed books must be returned before requesting account closure.");
+        }
+
+        var hasExistingRequest = await db.AccountClosureRequests
+            .AsNoTracking()
+            .WithPartitionKey(userId)
+            .AnyAsync(request => request.Id == userId, cancellationToken);
+
+        if (hasExistingRequest)
+        {
+            return LibraryActionResult.Conflict("An account closure request already exists.");
+        }
+
+        db.AccountClosureRequests.Add(new AccountClosureRequestEntity
+        {
+            Id = userId,
+            UserId = userId,
+            RequestedAtUtc = DateTime.UtcNow,
+            Reason = reason,
+            Status = AccountClosureRequestStatus.Pending
+        });
+
+        await db.SaveChangesAsync(cancellationToken);
+
+        return LibraryActionResult.Success("Account closure request accepted.");
+    }
+
+    private Task<bool> HasAccountClosureRequestAsync(
+        string userId,
+        CancellationToken cancellationToken)
+    {
+        return db.AccountClosureRequests
+            .AsNoTracking()
+            .WithPartitionKey(userId)
+            .AnyAsync(
+                request => request.Id == userId,
+                cancellationToken);
     }
 }

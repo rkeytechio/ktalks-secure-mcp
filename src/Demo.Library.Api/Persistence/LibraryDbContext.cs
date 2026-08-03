@@ -15,6 +15,7 @@ internal sealed class LibraryDbContext(
     public DbSet<Book> Books => Set<Book>();
     public DbSet<Loan> Loans => Set<Loan>();
     public DbSet<EndpointActivityLog> EndpointActivityLogs => Set<EndpointActivityLog>();
+    public DbSet<AccountClosureRequestEntity> AccountClosureRequests => Set<AccountClosureRequestEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -41,6 +42,15 @@ internal sealed class LibraryDbContext(
             entity.HasKey(x => x.Id);
             entity.HasPartitionKey(x => x.ActivityType);
             entity.Property(x => x.Id).ToJsonProperty("id");
+        });
+
+        modelBuilder.Entity<AccountClosureRequestEntity>(entity =>
+        {
+            entity.ToContainer(cosmosOptions.AccountClosureRequestsContainerName);
+            entity.HasKey(x => x.Id);
+            entity.HasPartitionKey(x => x.UserId);
+            entity.Property(x => x.Id).ValueGeneratedNever();
+            entity.Property(x => x.Status).HasConversion<string>();
         });
     }
 }

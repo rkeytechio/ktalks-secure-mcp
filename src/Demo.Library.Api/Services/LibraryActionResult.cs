@@ -1,5 +1,3 @@
-using Demo.Library.Api.Endpoints.Me.Contracts;
-
 namespace Demo.Library.Api.Services;
 
 internal enum LibraryActionStatus
@@ -12,10 +10,13 @@ internal enum LibraryActionStatus
 internal sealed record LibraryActionResult(
     LibraryActionStatus Status,
     string Message,
-    BookTransactionResponse? Payload = null)
+    object? Payload = null)
 {
-    public static LibraryActionResult Success(BookTransactionResponse payload)
-        => new(LibraryActionStatus.Success, payload.Message, payload);
+    public static LibraryActionResult Success(object payload, string message = "")
+        => new(LibraryActionStatus.Success, message, payload);
+
+    public static LibraryActionResult Success(string message)
+        => new(LibraryActionStatus.Success, message);
 
     public static LibraryActionResult NotFound(string message)
         => new(LibraryActionStatus.NotFound, message);

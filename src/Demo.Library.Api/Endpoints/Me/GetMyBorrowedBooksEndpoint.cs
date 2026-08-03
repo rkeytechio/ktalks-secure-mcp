@@ -17,8 +17,12 @@ internal static class GetMyBorrowedBooksEndpoint
                     return Results.Unauthorized();
                 }
 
-                var borrowedBooks = await libraryService.GetBorrowedBooksAsync(userId, cancellationToken);
-                return Results.Ok(borrowedBooks);
+                var result = await libraryService.GetBorrowedBooksAsync(userId, cancellationToken);
+                return result.Status switch
+                {
+                    LibraryActionStatus.Conflict => Results.Conflict(new { message = result.Message }),
+                    _ => Results.Ok(result.Payload)
+                };
             })
             .WithName("GetMyBorrowedBooks")
             .WithSummary("List books currently in the user's possession")

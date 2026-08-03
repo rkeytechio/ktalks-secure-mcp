@@ -1,4 +1,3 @@
-using Demo.Library.Api.Endpoints.Me.Contracts;
 using Demo.Library.Api.Endpoints.Search.Contracts;
 
 namespace Demo.Library.Api.Services;
@@ -19,7 +18,12 @@ internal interface ILibraryService
         string userId,
         CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyList<BorrowedBookResponse>> GetBorrowedBooksAsync(
+    Task<LibraryActionResult> GetBorrowedBooksAsync(
         string userId,
+        CancellationToken cancellationToken = default);
+
+    Task<LibraryActionResult> RequestAccountClosureAsync(
+        string userId,
+        string reason,
         CancellationToken cancellationToken = default);
 }
