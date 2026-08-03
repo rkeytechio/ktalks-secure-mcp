@@ -11,3 +11,6 @@ param tags = {
 
 param entraTenantId = '<your-tenant-id>'
 param entraAudienceClientId = '<your-api-app-client-id>'
+
+param aiFoundryModelName = 'gpt-4.1-mini'
+param aiFoundryModelFormat = 'OpenAI'

@@ -33,14 +33,20 @@ param entraTenantId string
 @description('Required. Entra app registration client ID used as the API audience (api://<client-id>).')
 param entraAudienceClientId string
 
+@description('Optional. Azure AI model name to deploy. Choose a currently available low-cost model for your region (for example gpt-4.1-mini).')
+param aiFoundryModelName string = 'gpt-4.1-mini'
+
+@description('Optional. Model format for Azure AI model deployment.')
+param aiFoundryModelFormat string = 'OpenAI'
+
 // Resource Names
-var uniqueSuffix = toLower(substring(uniqueString(subscription().id, resourceGroup().id), 0, 3))
+var uniqueSuffix = toLower(substring(uniqueString(location, subscription().id, resourceGroup().id), 0, 3))
 var normalizedCompany = toLower(replace(companyName, '-', ''))
 var normalizedProject = toLower(replace(projectName, '-', ''))
 var normalizedEnvironment = toLower(replace(environment, '-', ''))
 
-var baseCompact = '${normalizedCompany}${normalizedProject}${normalizedEnvironment}${uniqueSuffix}'
-var baseDashed = '${normalizedCompany}-${normalizedProject}-${normalizedEnvironment}-${uniqueSuffix}'
+var baseDashed = '${normalizedCompany}-${normalizedProject}${uniqueSuffix}-${normalizedEnvironment}'
+var baseCompact = replace(baseDashed, '-', '')
 
 var appServicePlanName = take('${baseDashed}-asp', 60)
 var webAppName = take('${baseDashed}-app', 60)
@@ -53,6 +59,9 @@ var cosmosAccountName = take('${baseCompact}cos', 44)
 var cosmosSqlDatabaseName = take('${normalizedEnvironment}-db', 255)
 var logAnalyticsWorkspaceName = take('${baseDashed}-law', 63)
 var appInsightsName = take('${baseDashed}-appi', 260)
+var aiFoundryAccountName = take('${baseCompact}ai', 64)
+var aiFoundryProjectName = take('${normalizedProject}-${normalizedEnvironment}-project', 64)
+var aiFoundryDeploymentName = take(replace('${aiFoundryModelName}-${normalizedEnvironment}', '.', '-'), 64)
 
 // Variables
 var appServicePlanSkuName = 'F1'
@@ -61,6 +70,7 @@ var cosmosPublicNetworkAccess = 'Enabled'
 var keyVaultPublicNetworkAccess = 'Enabled'
 var logAnalyticsSkuName = 'PerGB2018'
 var observabilityRetentionDays = 30
+var entraLoginInstance = az.environment().authentication.loginEndpoint
 
 // Resources
 resource userAssignedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
@@ -127,7 +137,6 @@ module cosmosAccount 'br/public:avm/res/document-db/database-account:0.20.0' = {
     capabilitiesToAdd: [
       'EnableServerless'
     ]
-    enableFreeTier: true
     enableAutomaticFailover: false
     disableLocalAuthentication: true
     disableKeyBasedMetadataWriteAccess: true
@@ -184,6 +193,62 @@ module keyVault 'br/public:avm/res/key-vault/vault:0.14.0' = {
   }
 }
 
+resource aiFoundryAccount 'Microsoft.CognitiveServices/accounts@2025-09-01' = {
+  name: aiFoundryAccountName
+  location: location
+  kind: 'AIServices'
+  identity: {
+    type: 'SystemAssigned, UserAssigned'
+    userAssignedIdentities: {
+      '${userAssignedIdentity.id}': {}
+    }
+  }
+  sku: {
+    name: 'S0'
+  }
+  properties: {
+    allowProjectManagement: true
+    customSubDomainName: aiFoundryAccountName
+    disableLocalAuth: true
+    publicNetworkAccess: 'Enabled'
+  }
+  tags: tags
+}
+
+resource aiFoundryProject 'Microsoft.CognitiveServices/accounts/projects@2025-12-01' = {
+  name: aiFoundryProjectName
+  parent: aiFoundryAccount
+  location: location
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${userAssignedIdentity.id}': {}
+    }
+  }
+  properties: {
+    displayName: aiFoundryProjectName
+    description: 'Azure AI Foundry project for ${projectName} (${environment}).'
+  }
+  tags: tags
+}
+
+resource aiFoundryModelDeployment 'Microsoft.CognitiveServices/accounts/deployments@2025-12-01' = {
+  name: aiFoundryDeploymentName
+  parent: aiFoundryAccount
+  sku: {
+    name: 'GlobalStandard'
+    capacity: 1
+  }
+  properties: {
+    model: {
+      format: aiFoundryModelFormat
+      name: aiFoundryModelName
+    }
+    versionUpgradeOption: 'OnceNewDefaultVersionAvailable'
+  }
+  tags: tags
+}
+
 module webApp 'br/public:avm/res/web/site:0.24.0' = {
   params: {
     name: webAppName
@@ -223,7 +288,7 @@ module webApp 'br/public:avm/res/web/site:0.24.0' = {
           APPLICATIONINSIGHTS_AUTHENTICATION_STRING: 'Authorization=AAD;ClientId=${userAssignedIdentity.properties.clientId}'
           AZURE_CLIENT_ID: userAssignedIdentity.properties.clientId
           MANAGED_IDENTITY_CLIENT_ID: userAssignedIdentity.properties.clientId
-          EntraAuthentication__Instance: 'https://login.microsoftonline.com'
+          EntraAuthentication__Instance: entraLoginInstance
           EntraAuthentication__TenantId: entraTenantId
           EntraAuthentication__Audience: 'api://${entraAudienceClientId}'
           EntraAuthentication__RequiredApiScope: 'api.library.account'
@@ -307,3 +372,15 @@ output keyVaultUri string = keyVault.outputs.uri
 
 @description('Key Vault resource ID.')
 output keyVaultResourceId string = keyVault.outputs.resourceId
+
+@description('Azure AI Foundry account name when enabled.')
+output aiFoundryAccountNameOutput string = aiFoundryAccount.name
+
+@description('Azure AI Foundry account resource ID when enabled.')
+output aiFoundryAccountResourceId string = aiFoundryAccount.id
+
+@description('Azure AI Foundry project resource ID when enabled.')
+output aiFoundryProjectResourceId string = aiFoundryProject.id
+
+@description('Azure AI model deployment name when enabled.')
+output aiFoundryModelDeploymentNameOutput string = aiFoundryModelDeployment.name
