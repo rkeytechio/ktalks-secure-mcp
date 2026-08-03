@@ -27,6 +27,12 @@ param tags object = {
   company: companyName
 }
 
+@description('Required. Entra tenant ID for authentication.')
+param entraTenantId string
+
+@description('Required. Entra app registration client ID used as the API audience (api://<client-id>).')
+param entraAudienceClientId string
+
 // Resource Names
 var uniqueSuffix = toLower(substring(uniqueString(subscription().id, resourceGroup().id), 0, 3))
 var normalizedCompany = toLower(replace(companyName, '-', ''))
@@ -208,6 +214,7 @@ module webApp 'br/public:avm/res/web/site:0.24.0' = {
           CosmosDatabase__EndpointActivity: 'EndpointActivity'
           CosmosDatabase__Books: 'Books'
           CosmosDatabase__Loans: 'Loans'
+          CosmosDatabase__AccountClosureRequests: 'AccountClosureRequests'
           CosmosDatabase__EnsureCreated: 'true'
           ActivityLogging__CaptureRequestBody: 'true'
           ActivityLogging__CaptureResponseBody: 'true'
@@ -216,6 +223,19 @@ module webApp 'br/public:avm/res/web/site:0.24.0' = {
           APPLICATIONINSIGHTS_AUTHENTICATION_STRING: 'Authorization=AAD;ClientId=${userAssignedIdentity.properties.clientId}'
           AZURE_CLIENT_ID: userAssignedIdentity.properties.clientId
           MANAGED_IDENTITY_CLIENT_ID: userAssignedIdentity.properties.clientId
+          EntraAuthentication__Instance: 'https://login.microsoftonline.com'
+          EntraAuthentication__TenantId: entraTenantId
+          EntraAuthentication__Audience: 'api://${entraAudienceClientId}'
+          EntraAuthentication__RequiredApiScope: 'api.library.account'
+          EntraAuthentication__RequiredMcpScope: 'mcp.library.account'
+          EntraAuthentication__ApiResourceDocumentationUrl: 'https://docs.example.com/api/library-rest'
+          EntraAuthentication__JwtResourceMetadataPath: '/.well-known/oauth-protected-resource/api'
+          Mcp__ServerName: 'demo-library-mcp'
+          Mcp__ServerVersion: '1.0.0'
+          Mcp__StatelessTransport: 'true'
+          Mcp__ResourceDocumentationUrl: 'https://docs.example.com/api/library-mcp'
+          Mcp__ResourceMetadataPath: '/.well-known/oauth-protected-resource/mcp'
+          Mcp__AuthorizationMode: 'ToolLevel'
         }
       }
     ]

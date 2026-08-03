@@ -8,3 +8,6 @@ param tags = {
   owner: 'platform-team'
   workload: 'demo-library-api'
 }
+
+param entraTenantId = '<your-tenant-id>'
+param entraAudienceClientId = '<your-api-app-client-id>'
