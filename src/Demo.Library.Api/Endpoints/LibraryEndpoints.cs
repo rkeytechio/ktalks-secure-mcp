@@ -1,5 +1,6 @@
 using Demo.Library.Api.Endpoints.Me;
 using Demo.Library.Api.Endpoints.Search;
+using Demo.Library.Api.Authentication;
 
 namespace Demo.Library.Api.Endpoints;
 
@@ -11,7 +12,8 @@ internal static class LibraryEndpoints
         var search = api.MapGroup("/search")
             .WithTags("Library Search");
         var me = api.MapGroup("/me")
-            .WithTags("My Library");
+            .WithTags("My Library")
+            .RequireAuthorization(LibraryAuthorizationPolicies.ApiAccountScopePolicyName);
 
         search.MapSearchBooks();
         me.MapBorrowBook();

@@ -29,6 +29,6 @@ internal static class BorrowBookEndpoint
             })
             .WithName("BorrowBook")
             .WithSummary("Borrow a book for the current user")
-            .WithDescription("Requires a simulated authenticated user via the X-User-Id header.");
+            .WithDescription("An authenticated active user can borrow a book by its ID.");
     }
 }

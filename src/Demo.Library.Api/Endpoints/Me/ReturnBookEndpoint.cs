@@ -29,6 +29,6 @@ internal static class ReturnBookEndpoint
             })
             .WithName("ReturnBook")
             .WithSummary("Return a borrowed book for the current user")
-            .WithDescription("Requires a simulated authenticated user via the X-User-Id header.");
+            .WithDescription("An authenticated active user can return a borrowed book by its ID.");
     }
 }

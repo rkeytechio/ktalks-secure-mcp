@@ -26,6 +26,6 @@ internal static class GetMyBorrowedBooksEndpoint
             })
             .WithName("GetMyBorrowedBooks")
             .WithSummary("List books currently in the user's possession")
-            .WithDescription("Requires a simulated authenticated user via the X-User-Id header.");
+            .WithDescription("An authenticated active user can view their currently borrowed books.");
     }
 }

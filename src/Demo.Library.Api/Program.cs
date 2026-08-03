@@ -1,5 +1,7 @@
 using Demo.Library.Api.Endpoints;
+using Demo.Library.Api.Authentication;
 using Demo.Library.Api.Logging;
+using Demo.Library.Api.OpenApi;
 using Demo.Library.Api.Persistence;
 using Demo.Library.Api.Persistence.Seed;
 using Demo.Library.Api.Services;
@@ -7,9 +9,13 @@ using Demo.Library.Api.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 // API and diagnostics
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddLibraryOpenApi();
+
+// Application Insights telemetry
 builder.Services.AddApplicationInsightsTelemetry();
+
+// Authentication and authorization
+builder.Services.AddLibraryAuthentication(builder.Configuration);
 
 // Domain services
 builder.Services.AddScoped<ILibraryService, LibraryService>();
@@ -30,9 +36,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+// Middleware pipeline: HTTPS -> Auth -> Activity logging -> Endpoints.
 app.UseHttpsRedirection();
+app.UseLibraryAuthentication();
 app.UseActivityLogging();
-
 app.MapLibraryEndpoints();
 
 app.Run();

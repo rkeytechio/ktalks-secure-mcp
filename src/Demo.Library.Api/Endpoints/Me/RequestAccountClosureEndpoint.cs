@@ -37,6 +37,6 @@ internal static class RequestAccountClosureEndpoint
             })
             .WithName("RequestAccountClosure")
             .WithSummary("Request closure of the current user's account")
-            .WithDescription("The current user must have no borrowed books. Requires a simulated authenticated user via the X-User-Id header.");
+            .WithDescription("An authenticated active user can request account closure after returning all borrowed books.");
     }
 }
